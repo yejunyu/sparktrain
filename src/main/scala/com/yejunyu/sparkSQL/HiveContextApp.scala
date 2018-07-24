@@ -12,7 +12,7 @@ object HiveContextApp {
     // 1. 创建context
     val sparkConf = new SparkConf()
     // 测试环境
-//    sparkConf.setAppName("HiveContextApp")
+    //    sparkConf.setAppName("HiveContextApp")
     val sc = new SparkContext(sparkConf)
     var hiveContext = new HiveContext(sc)
 
