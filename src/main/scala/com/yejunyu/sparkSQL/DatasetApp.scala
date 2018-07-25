@@ -22,6 +22,8 @@ object DatasetApp {
     import spark.implicits._
     val ds = peopleDF.as[Info]
     ds.map(line => line.name + " : " + line.age.toInt).show()
+      // 写数据
+//    ds.write.format("json").save(path)
     spark.stop()
   }
 
