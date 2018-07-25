@@ -19,6 +19,7 @@ object SQLContextApp {
 
     // 2 处理
     val path = "src/main/scala/com/yejunyu/sparkSQL/example/people.json"
+//    val path = "hdfs://yejunyu-pc:8020/word"
     val people = sqlContext.read.format("json").load(path)
     people.printSchema()
     people.show()
