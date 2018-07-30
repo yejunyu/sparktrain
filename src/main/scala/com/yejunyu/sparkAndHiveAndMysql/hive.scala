@@ -17,12 +17,13 @@ object hive {
     val userDF = spark.read.csv(path)
     import spark.implicits._
     val ds = userDF.as[activeUser]
-    ds.map(line => line.id + " : " + line.channel+" : "+line.count).show()
+    ds.map(line => line.id + " : " + line.channel + " : " + line.count).show()
     userDF.show()
 
   }
 
-  case class activeUser(id:Int,channel:String,count:Int,countType:Short,dt:Long)
+  case class activeUser(id: Int, channel: String, count: Int, countType: Short, dt: Long)
+
 }
 
 

@@ -12,20 +12,18 @@ object etl_e {
     var spark = SparkSession.builder().appName("etl_e")
       .master("local[2]").getOrCreate()
     var path = "file:///home/yejunyu/IdeaProjects/gotest/dig.log"
-    val access = spark.sparkContext.textFile(path)
-    //    access.take(10).foreach(println)
+    val accessRDD = spark.sparkContext.textFile(path)
+    //    accessRDD.take(10).foreach(println)
 
-    var path1 = "./aaaa"
-    access.map(line => {
+    accessRDD.map(line => {
       val splits = line.split(" ")
       val ip = splits(0)
       val time = splits(3) + " " + splits(4)
       val flow = splits(9)
       val url = splits(6)
-      val datetime = DateUtils.parse(time)
-      DateUtils.parse(time) + "," + getUrlStr(url) + "," + flow + "," + ip
-      //      (DateUtils.parse(time),getUrlStr(url),flow,ip)
-    }).saveAsTextFile(path1)
+      val datetime = DateUtil.parse(time)
+      DateUtil.parse(time) + "," + getUrlStr(url) + "," + flow + "," + ip
+    }).saveAsTextFile("./diglog")
     spark.stop()
   }
 
