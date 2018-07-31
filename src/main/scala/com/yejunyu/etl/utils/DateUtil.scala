@@ -1,4 +1,4 @@
-package com.yejunyu.etl
+package com.yejunyu.etl.utils
 
 import java.util.{Date, Locale}
 

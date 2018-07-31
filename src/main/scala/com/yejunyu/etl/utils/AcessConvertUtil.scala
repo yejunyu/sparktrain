@@ -1,4 +1,4 @@
-package com.yejunyu.etl
+package com.yejunyu.etl.utils
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._

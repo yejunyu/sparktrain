@@ -1,4 +1,4 @@
-package com.yejunyu.etl
+package com.yejunyu.etl.utils
 
 import com.ggstar.util.ip.IpHelper
 
@@ -9,7 +9,7 @@ import com.ggstar.util.ip.IpHelper
 object IpUtil {
 
   def main(args: Array[String]): Unit = {
-    println(getIpRegion("121.40.225.209"))
+    println(getIpRegion("120.92.77.237"))
   }
 
   def getIpRegion(ip: String) = {

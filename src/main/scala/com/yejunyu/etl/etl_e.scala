@@ -1,5 +1,6 @@
 package com.yejunyu.etl
 
+import com.yejunyu.etl.utils.DateUtil
 import org.apache.spark.sql.SparkSession
 import org.eclipse.jetty.util.{MultiMap, UrlEncoded}
 
