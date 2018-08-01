@@ -15,8 +15,8 @@ object etl_t {
     val accessRDD = spark.sparkContext.textFile(path)
     // rdd=>dataframe
     val accessDF = spark.createDataFrame(accessRDD.map(x => AcessConvertUtil.parseLog(x)), AcessConvertUtil.struct)
-    //    accessDF.printSchema()
-    //    accessDF.show()
+    //        accessDF.printSchema()
+    //        accessDF.show()
     // 以天分区
     // coalesce设置输出文件个数（*重要）
     accessDF.coalesce(1).write.format("parquet").partitionBy("day")

@@ -1,7 +1,7 @@
 package com.yejunyu.etl
 
 import com.yejunyu.etl.dao.StatDAO
-import com.yejunyu.etl.model.DayVideoAccessStat
+import com.yejunyu.etl.model.{DayVideoAccessStat, DayVideoCityAccessStat}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -23,7 +23,7 @@ object etl_l {
     //    accessDf.printSchema()
     //    accessDf.show()
     // 20180511那一天最受欢迎视频课程
-    videoAcessTopNStat(spark, accessDf)
+//    videoAcessTopNStat(spark, accessDf)
     // 按照地市统计
     cityAcessTopNStat(spark, accessDf)
     spark.stop()
@@ -42,7 +42,7 @@ object etl_l {
 
         partitionOfRecords.foreach(info => {
           val day = info.getAs[String]("day")
-          val cmsId = info.getAs[Long]("cmsId")
+          val cmsId = info.getAs[Int]("cmsId")
           val times = info.getAs[Long]("times")
 
           list.append(DayVideoAccessStat(day, cmsId, times))
@@ -64,7 +64,7 @@ object etl_l {
     cityAcessTopNDF.show()
 
     // sql窗口函数
-    cityAcessTopNDF.select(
+    val cityVideoTop3Df = cityAcessTopNDF.select(
       cityAcessTopNDF("day"),
       cityAcessTopNDF("cmsId"),
       cityAcessTopNDF("city"),
@@ -72,6 +72,25 @@ object etl_l {
       row_number().over(Window.partitionBy("city")
         .orderBy(cityAcessTopNDF("times").desc))
         .as("rank")
-    ).filter("rank <=3").show()
+    ).filter("rank <=3")
+
+    try {
+      cityVideoTop3Df.foreachPartition(partitionOfRecords => {
+        val list = new ListBuffer[DayVideoCityAccessStat]
+
+        partitionOfRecords.foreach(info => {
+          val day = info.getAs[String]("day")
+          val city = info.getAs[String]("city")
+          val cmsId = info.getAs[Int]("cmsId")
+          val times = info.getAs[Long]("times")
+          val rank = info.getAs[Int]("rank")
+
+          list.append(DayVideoCityAccessStat(day, cmsId, times, city, rank))
+        })
+        StatDAO.insertDayVideoCityAcessTopN(list)
+      })
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
   }
 }

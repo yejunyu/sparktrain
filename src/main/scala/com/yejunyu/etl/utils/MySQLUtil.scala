@@ -7,11 +7,14 @@ import java.sql.{Connection, DriverManager, PreparedStatement}
   * @date 18-7-31. 
   */
 object MySQLUtil {
+  def main(args: Array[String]): Unit = {
+    println(getConnection())
+  }
 
   def getConnection(): Connection = {
     val user = "root"
     val password = "123456"
-    DriverManager getConnection("jdbc:mysql://localhost:3306/sparktest", user, password)
+    DriverManager.getConnection("jdbc:mysql://localhost:3306/sparktest", user, password)
   }
 
   def release(con: Connection, pstmt: PreparedStatement): Unit = {
