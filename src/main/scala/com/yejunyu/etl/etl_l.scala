@@ -1,7 +1,7 @@
 package com.yejunyu.etl
 
 import com.yejunyu.etl.dao.StatDAO
-import com.yejunyu.etl.model.{DayVideoAccessStat, DayVideoCityAccessStat}
+import com.yejunyu.etl.model.{DayVideoAccessStat, DayVideoCityAccessStat, DayVideoFlowAccessStat}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -20,57 +20,55 @@ object etl_l {
       .master("local[2]").getOrCreate()
 
     val accessDf = spark.read.parquet("/home/yejunyu/hadoopTest/clean")
-    //    accessDf.printSchema()
-    //    accessDf.show()
+
     // 20180511那一天最受欢迎视频课程
-//    videoAcessTopNStat(spark, accessDf)
-    // 按照地市统计
-    cityAcessTopNStat(spark, accessDf)
+    //    videoAccessTopNStat(spark, accessDf)
+    //    // 按照地市统计
+    //    cityAccessTopNStat(spark, accessDf)
+    // 按照流量统计
+    //    flowAccessTopNStat(spark, accessDf)
     spark.stop()
   }
 
-  def videoAcessTopNStat(spark: SparkSession, accessDF: DataFrame): Unit = {
+  def flowAccessTopNStat(spark: SparkSession, frame: DataFrame): Unit = {
     // dataframe api方式
     import spark.implicits._
-    val videoAcessTopNDF = accessDF.filter($"day" === "20180511" && $"cmsType" === "video")
-      .groupBy("day", "cmsId").agg(count("cmsId").as("times"))
-      .orderBy($"times".desc)
+    val flowAccessTopNDF = frame.filter($"day" === "20180511" && $"cmsType" === "video")
+      .groupBy("day", "cmsId").agg(sum("flow").as("flow"))
+      .orderBy($"flow".desc)
     // 把dataframe装配成一个list,然后写进mysql
     try {
-      videoAcessTopNDF.foreachPartition(partitionOfRecords => {
-        val list = new ListBuffer[DayVideoAccessStat]
+      flowAccessTopNDF.foreachPartition(partitionOfRecords => {
+        val list = new ListBuffer[DayVideoFlowAccessStat]
 
         partitionOfRecords.foreach(info => {
           val day = info.getAs[String]("day")
           val cmsId = info.getAs[Int]("cmsId")
-          val times = info.getAs[Long]("times")
+          val flow = info.getAs[Long]("flow")
 
-          list.append(DayVideoAccessStat(day, cmsId, times))
+          list.append(DayVideoFlowAccessStat(day, cmsId, flow))
         })
-        StatDAO.insertDayVideoAcessTopN(list)
+        StatDAO.insertDayVideoFlowAcessTopN(list)
       })
     } catch {
       case e: Exception => e.printStackTrace()
     }
-
   }
 
-  def cityAcessTopNStat(spark: SparkSession, accessDF: DataFrame): Unit = {
+  def cityAccessTopNStat(spark: SparkSession, accessDF: DataFrame): Unit = {
     // sql方式操作
     accessDF.createOrReplaceTempView("access_tmp_table")
-    val cityAcessTopNDF = spark.sql("select day,cmsId,city,count(cmsId) times from access_tmp_table where day='20180302' and cmsType='video'" +
+    val cityAccessTopNDF = spark.sql("select day,cmsId,city,count(cmsId) times from access_tmp_table where day='20180302' and cmsType='video'" +
       " group by day,cmsId,city" +
       " order by times desc")
-    cityAcessTopNDF.show()
-
     // sql窗口函数
-    val cityVideoTop3Df = cityAcessTopNDF.select(
-      cityAcessTopNDF("day"),
-      cityAcessTopNDF("cmsId"),
-      cityAcessTopNDF("city"),
-      cityAcessTopNDF("times"),
+    val cityVideoTop3Df = cityAccessTopNDF.select(
+      cityAccessTopNDF("day"),
+      cityAccessTopNDF("cmsId"),
+      cityAccessTopNDF("city"),
+      cityAccessTopNDF("times"),
       row_number().over(Window.partitionBy("city")
-        .orderBy(cityAcessTopNDF("times").desc))
+        .orderBy(cityAccessTopNDF("times").desc))
         .as("rank")
     ).filter("rank <=3")
 
@@ -88,6 +86,31 @@ object etl_l {
           list.append(DayVideoCityAccessStat(day, cmsId, times, city, rank))
         })
         StatDAO.insertDayVideoCityAcessTopN(list)
+      })
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
+  }
+
+  def videoAccessTopNStat(spark: SparkSession, accessDF: DataFrame): Unit = {
+    // dataframe api方式
+    import spark.implicits._
+    val videoAccessTopNDF = accessDF.filter($"day" === "20180511" && $"cmsType" === "video")
+      .groupBy("day", "cmsId").agg(count("cmsId").as("times"))
+      .orderBy($"times".desc)
+    // 把dataframe装配成一个list,然后写进mysql
+    try {
+      videoAccessTopNDF.foreachPartition(partitionOfRecords => {
+        val list = new ListBuffer[DayVideoAccessStat]
+
+        partitionOfRecords.foreach(info => {
+          val day = info.getAs[String]("day")
+          val cmsId = info.getAs[Int]("cmsId")
+          val times = info.getAs[Long]("times")
+
+          list.append(DayVideoAccessStat(day, cmsId, times))
+        })
+        StatDAO.insertDayVideoAcessTopN(list)
       })
     } catch {
       case e: Exception => e.printStackTrace()
