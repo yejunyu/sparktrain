@@ -20,20 +20,22 @@ object etl_l {
       .master("local[2]").getOrCreate()
 
     val accessDf = spark.read.parquet("/home/yejunyu/hadoopTest/clean")
-
+    val day = ""
+    // 先清空当天的数据
+    StatDAO.deleteTable(day)
     // 20180511那一天最受欢迎视频课程
-    //    videoAccessTopNStat(spark, accessDf)
-    //    // 按照地市统计
-    //    cityAccessTopNStat(spark, accessDf)
-    // 按照流量统计
-    //    flowAccessTopNStat(spark, accessDf)
+    videoAccessTopNStat(spark, accessDf, day)
+    // 按照地市统计
+    cityAccessTopNStat(spark, accessDf, day)
+    //     按照流量统计
+    flowAccessTopNStat(spark, accessDf, day)
     spark.stop()
   }
 
-  def flowAccessTopNStat(spark: SparkSession, frame: DataFrame): Unit = {
+  def flowAccessTopNStat(spark: SparkSession, frame: DataFrame, day: String): Unit = {
     // dataframe api方式
     import spark.implicits._
-    val flowAccessTopNDF = frame.filter($"day" === "20180511" && $"cmsType" === "video")
+    val flowAccessTopNDF = frame.filter($"cmsType" === "video")
       .groupBy("day", "cmsId").agg(sum("flow").as("flow"))
       .orderBy($"flow".desc)
     // 把dataframe装配成一个list,然后写进mysql
@@ -55,10 +57,10 @@ object etl_l {
     }
   }
 
-  def cityAccessTopNStat(spark: SparkSession, accessDF: DataFrame): Unit = {
+  def cityAccessTopNStat(spark: SparkSession, accessDF: DataFrame, day: String): Unit = {
     // sql方式操作
     accessDF.createOrReplaceTempView("access_tmp_table")
-    val cityAccessTopNDF = spark.sql("select day,cmsId,city,count(cmsId) times from access_tmp_table where day='20180302' and cmsType='video'" +
+    val cityAccessTopNDF = spark.sql("select day,cmsId,city,count(cmsId) times from access_tmp_table where cmsType='video'" +
       " group by day,cmsId,city" +
       " order by times desc")
     // sql窗口函数
@@ -92,10 +94,10 @@ object etl_l {
     }
   }
 
-  def videoAccessTopNStat(spark: SparkSession, accessDF: DataFrame): Unit = {
+  def videoAccessTopNStat(spark: SparkSession, accessDF: DataFrame, day: String): Unit = {
     // dataframe api方式
     import spark.implicits._
-    val videoAccessTopNDF = accessDF.filter($"day" === "20180511" && $"cmsType" === "video")
+    val videoAccessTopNDF = accessDF.filter($"cmsType" === "video")
       .groupBy("day", "cmsId").agg(count("cmsId").as("times"))
       .orderBy($"times".desc)
     // 把dataframe装配成一个list,然后写进mysql
